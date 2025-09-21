@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Orders Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+  <!-- Container -->
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">📋 Orders Dashboard</h1>
+      <div class="mt-4 sm:mt-0 flex space-x-3">
+        <button id="refreshBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow">
+          🔄 Refresh
+        </button>
+        <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg shadow">
+          ⬅ Back
+        </a>
+      </div>
+    </header>
+
+    <!-- Orders Container -->
+    <div id="ordersWrap" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></div>
+  </div>
+
+  <script>
+    async function fetchOrders() {
+      try {
+        const res = await fetch("/api/orders");
+        const orders = await res.json();
+        const wrap = document.getElementById("ordersWrap");
+        wrap.innerHTML = "";
+
+        if (orders.length === 0) {
+          wrap.innerHTML = `<p class="text-gray-500 text-center w-full">No orders yet.</p>`;
+          return;
+        }
+
+        orders.forEach(order => {
+          const card = document.createElement("div");
+          card.className = "bg-white rounded-xl shadow hover:shadow-lg transition p-5 flex flex-col justify-between";
+
+          card.innerHTML = `
+            <div>
+              <h2 class="text-lg font-semibold text-gray-800 mb-2">${order.juice} Juice</h2>
+              <p class="text-gray-600 text-sm"><strong>Name:</strong> ${order.name}</p>
+              <p class="text-gray-600 text-sm"><strong>Phone:</strong> ${order.phone}</p>
+              <p class="text-gray-600 text-sm"><strong>Quantity:</strong> ${order.quantity}</p>
+              <p class="text-gray-600 text-sm"><strong>Instructions:</strong> ${order.instructions || "—"}</p>
+              <p class="text-xs text-gray-400 mt-2">${new Date(order.createdAt).toLocaleString()}</p>
+            </div>
+            <button onclick="deleteOrder('${order._id}')" class="mt-4 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm">
+              🗑 Delete
+            </button>
+          `;
+          wrap.appendChild(card);
+        });
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+      }
+    }
+
+    async function deleteOrder(id) {
+      if (!confirm("Are you sure you want to delete this order?")) return;
+      try {
+        const res = await fetch(`/api/orders/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (res.ok) {
+          alert(data.message);
+          fetchOrders();
+        } else {
+          alert(data.error || "Failed to delete order.");
+        }
+      } catch (err) {
+        console.error("Error deleting order:", err);
+      }
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", fetchOrders);
+    window.onload = fetchOrders;
+  </script>
+</body>
+</html>
+
